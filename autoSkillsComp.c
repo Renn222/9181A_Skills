@@ -1,4 +1,3 @@
-
 #pragma config(Sensor, in1,    lineLeft,       sensorLineFollower)
 #pragma config(Sensor, in2,    lineCenter,     sensorLineFollower)
 #pragma config(Sensor, in3,    lineRight,      sensorLineFollower)
@@ -6,8 +5,6 @@
 #pragma config(Sensor, dgtl1,  encoderMogo,    sensorQuadEncoder)
 #pragma config(Sensor, dgtl3,  encoderRight,   sensorQuadEncoder)
 #pragma config(Sensor, dgtl5,  encoderLeft,    sensorQuadEncoder)
-#pragma config(Sensor, dgtl7,  limitLeft,      sensorTouch)
-#pragma config(Sensor, dgtl8,  limitRight,     sensorTouch)
 #pragma config(Motor,  port2,           backR,         tmotorVex393TurboSpeed_MC29, openLoop, reversed)
 #pragma config(Motor,  port3,           backL,         tmotorVex393TurboSpeed_MC29, openLoop)
 #pragma config(Motor,  port4,           tipR,          tmotorVex393HighSpeed_MC29, openLoop)
@@ -55,8 +52,9 @@ int constant = 1;
 float distanceMogo1 = (48/circumference) * 360; //Distance for the first mogo
 float distanceTest = (10/circumference) * 360;
 
-int timeMogoIntake = 61; //number of ticks for the mobo intake to go down
+int timeMogoIntake = 65; //number of ticks for the mogo intake to go down
 int g = 0;
+int motorEncoderTest = 0;
 
 /*/////////////////////////////*/
 /*       Reset Functions       */
@@ -94,14 +92,14 @@ void driveAlto(float distanceInInches, int spd)//distance controls direction not
 {
 	float leftSpd = spd;
 	float rightSpd = spd;
-	float inverter = 1;
+	float inverter = 1.0;
 	if(distanceInInches < 0.0)
 	{
-		inverter*=-1;
+		inverter*=-1.0;
 	}
 	float wheelRadius = 2.0;
 	float cir = wheelRadius*2*PI;
-	float degree = ((distanceInInches/cir) * 360)/3;
+	float degree = ((distanceInInches/cir) * 360.0 *0.5);
 
 	SensorValue[encoderRight] = 0;
 	SensorValue[encoderLeft] = 0;
@@ -129,11 +127,11 @@ void driveAlto(float distanceInInches, int spd)//distance controls direction not
 		motor[frontL] = leftSpd * inverter;
 		motor[frontR] = rightSpd * inverter;
 	}
-	motor[backL] = -(leftSpd * inverter) / 5;
-	motor[backR] = -(rightSpd * inverter) / 5;
-	motor[frontL] = -(leftSpd * inverter) / 5;
-	motor[frontR] = -(rightSpd * inverter) / 5;
-	wait1Msec(100);
+	motor[backL] = -(leftSpd * inverter) / 3;
+	motor[backR] = -(rightSpd * inverter) / 3;
+	motor[frontL] = -(leftSpd * inverter) / 3;
+	motor[frontR] = -(rightSpd * inverter) / 3;
+	wait1Msec(150);
 	motor[backL] = 0;
 	motor[backR] = 0;
 	motor[frontR] = 0;
@@ -200,7 +198,7 @@ void turn(int bearing)//assume positive is right and negative is left
 		motor[backL] = 50;
 		motor[frontR] = -50;
 		motor[backR] = -50;
-		wait1Msec(100);
+		wait1Msec(200);
 
 		resetDrive();
 	}
@@ -227,7 +225,7 @@ void turn(int bearing)//assume positive is right and negative is left
 		motor[frontR] = 50;
 		motor[backR] = 50;
 
-		wait1Msec(100);
+		wait1Msec(200);
 
 		resetDrive();
 	}
@@ -241,7 +239,7 @@ void mogo(int choice)
 	//lower mogo intake
 	if(choice == front)
 	{
-		while(abs(SensorValue[encoderMogo]) <= timeMogoIntake)
+		while(abs(SensorValue[encoderMogo]) <= 95)
 		{
 			motor[mogoL] = 127;
 			motor[mogoR] = 127;
@@ -250,10 +248,10 @@ void mogo(int choice)
 	//raise mogo intake
 	else if(choice == back)
 	{
-		while(abs(SensorValue[encoderMogo]) <= (timeMogoIntake + 15))
+		while(abs(SensorValue[encoderMogo]) <= 95)
 		{
-			motor[mogoL] = -80;
-			motor[mogoR] = -80;
+			motor[mogoL] = -121;
+			motor[mogoR] = -121;
 		}
 	}
 	resetMogo();
@@ -265,24 +263,6 @@ void mogo(int choice)
 /*    Placing in Point Zones   */
 /*/////////////////////////////*/
 
-void into20() //Getting into the 20 pt zone
-{
-	resetDriveEncoder();
-
-	while(SensorValue[limitRight] != 1 || SensorValue[limitLeft] != 1)
-	{
-		motor[frontL] = 125;
-		motor[backL] = 125;
-		motor[frontR] = 125;
-		motor[backR] = 125;
-	}
-	resetDrive();
-	mogo(front);
-
-	move(1, 200);
-	mogo(back);
-	resetDrive();
-}
 
 
 void pre_auton()
@@ -328,26 +308,47 @@ task autonomous()
 	// Remove this function call once you have "real" code.
 	//AutonomousCodePlaceholderForTesting();
 
-	driveAlto(10, 121);
+
 
 	//127 sent to mogo intake (lower it)
-	/*mogo(0);
+	mogo(front);
 
 	//moves forward to mogo
-	move(0, distanceMogo1);
+	driveAlto(62, 121);
 
 	//-127 sent to mogo intake (raise it)
-	mogo(1);
+	mogo(back);
+	wait1Msec(200);
+	driveAlto(-48, 121);
 
-	//move backward a bit out of row of cones
-	move(-1, distanceMogo1-25);
+	turn(45);
+	driveAlto(-22, 121);
 
-	//robot turns 180 to the right
-	turn(180);
+	turn(90);
+	driveAlto(30, 121);
+	wait1Msec(200);
+	motor[frontL] = 50;
+	motor[backR] = 50;
+	motor[frontR] = 50;
+	motor[backR] = 50;
+	mogo(front);
+	wait1Msec(200);
+	driveAlto(-7, 121);
+	mogo(back);
+	wait1Msec(200);
+	driveAlto(-25, 121);
 
-	//move forward towards 20 pt
-	into20();
-	*/
+	turn(87);
+	driveAlto(-50,121);
+	mogo(front);
+	wait1Msec(200);
+	driveAlto(32, 121);
+
+	turn(-135);
+	driveAlto(45, 121);
+	mogo(front);
+	driveAlto(-9, 121);
+	turn(90);
 
 }
 
@@ -402,6 +403,7 @@ task usercontrol()
 	while (true)
 	{
 		g = SensorValue[gyro];
+		motorEncoderTest = SensorValue[encoderMogo];
 		// This is the main execution loop for the user control program.
 		// Each time through the loop your program should update motor + servo
 		// values based on feedback from the joysticks.
