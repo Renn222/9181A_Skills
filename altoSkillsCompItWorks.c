@@ -199,19 +199,10 @@ resetDrive();
 void turn(float bearing)//assume positive is right and negative is left
 {
 	//bearing*=(4/5);
-	bearing = (bearing / 10) * 9;
-	float currentBearing = SensorValue[gyro];
+	bearing = (bearing * 9) / 10;//6.755
+	float currentBearing = SensorValue[gyro]/10;
 	float targetBearing = bearing + currentBearing;
-	float TURN_SLOWDOWN = 50;
-
-	if(targetBearing > 0 && targetBearing > 360)
-	{
-		targetBearing = targetBearing - 360;
-	}
-	else if(targetBearing < 0 && targetBearing < -360)
-	{
-		targetBearing = targetBearing + 360;
-	}
+	float TURN_SLOWDOWN = 10;
 
 	//float gyr = SensorValue[Gyro]/10;
 
@@ -221,6 +212,16 @@ void turn(float bearing)//assume positive is right and negative is left
 
 	if (targetBearing < SensorValue[gyro]/10) // Left turn
 	{
+		/*
+		if(targetBearing > 0 && targetBearing > 360)
+		{
+		targetBearing = targetBearing - 360;
+		}
+		else if(targetBearing < 0 && targetBearing < -360)
+		{
+		targetBearing = targetBearing + 360;
+		}
+		*/
 		while (SensorValue[gyro]/10 > targetBearing + TURN_SLOWDOWN)
 		{
 			motor[frontL] = -100;
@@ -238,16 +239,26 @@ void turn(float bearing)//assume positive is right and negative is left
 			//gyr = SensorValue[Gyro]/10;
 		}
 
-		motor[frontL] = 30;
-		motor[backL] = 30;
-		motor[frontR] = -30;
-		motor[backR] = -30;
-		wait1Msec(100);
+		motor[frontL] = 40;
+		motor[backL] = 40;
+		motor[frontR] = -40;
+		motor[backR] = -40;
+		wait1Msec(200);
 
 		resetDrive();
 	}
 	else // Right turn
 	{
+		/*
+		if(targetBearing > 0 && targetBearing > 360)
+		{
+		targetBearing = targetBearing - 360;
+		}
+		else if(targetBearing < 0 && targetBearing < -360)
+		{
+		targetBearing = targetBearing + 360;
+		}
+		*/
 		while (SensorValue[gyro]/10 < targetBearing - TURN_SLOWDOWN)
 		{
 			motor[frontL] = 100;
@@ -264,12 +275,12 @@ void turn(float bearing)//assume positive is right and negative is left
 			motor[backR] = -50;
 			//gyr = SensorValue[gyro]/10;
 		}
-		motor[frontL] = -30;
-		motor[backR] = -30;
-		motor[frontR] = 30;
-		motor[backR] = 30;
+		motor[frontL] = -40;
+		motor[backR] = -40;
+		motor[frontR] = 40;
+		motor[backR] = 40;
 
-		wait1Msec(100);
+		wait1Msec(200);
 
 		resetDrive();
 	}
@@ -359,11 +370,10 @@ task autonomous()
 	move(53);
 	mogo(back);
 	wait1Msec(200);
-	move(-45);
+	move(-49);
 	turn(-45);//degree of turn
-	move(-37);
+	move(-27);
 	turn(-90);
-	move(-3);
 	wait1Msec(200);
 	constantDrive(121);//positive is forward
 	wait1Msec(1700);
@@ -378,7 +388,7 @@ task autonomous()
 
 	move(-25);
 	turn(-90);//wall crash
-	move(-53);//wall
+	move(-54);//wall                       maybe make this constantDrive so it doesn't stop********************(maybe)
 	resetDriveEncoder(); //wall sensor reset
 	mogo(front);
 	move(40);
@@ -391,7 +401,7 @@ task autonomous()
 	//total 30
 
 	turn(-90);
-	move(33);
+	move(19);
 	turn(-90);
 	mogo(front);
 	move(34);
