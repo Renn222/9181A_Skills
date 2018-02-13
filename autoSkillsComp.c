@@ -42,17 +42,15 @@
 
 int front = 1;
 int back  = -1;
+/*
+float kp = 5;
+float ki = 5;
+float kd = 5;
+*/
+int MAX_POWER = 121;
+int MIN_POWER = 40;
+int MAX_ERROR = 50;
 
-/* Variables used to calculate how fast bot is moving*/
-float wheelDiameter = 4.5;
-float circumference = wheelDiameter * PI; //Roughly 14.13 inches
-
-int constant = 1;
-
-float distanceMogo1 = (48/circumference) * 360; //Distance for the first mogo
-float distanceTest = (10/circumference) * 360;
-
-int timeMogoIntake = 65; //number of ticks for the mogo intake to go down
 int g = 0;
 int motorEncoderTest = 0;
 
@@ -66,6 +64,14 @@ void resetDrive()
 	motor[backL] = 0;
 	motor[frontR] = 0;
 	motor[backR] = 0;
+}
+
+void constantDrive(int spdC)
+{
+	motor[frontL] = spdC;
+	motor[backL] = spdC;
+	motor[frontR] = spdC;
+	motor[backR] = spdC;
 }
 
 void resetDriveEncoder()
@@ -82,8 +88,10 @@ void resetMogoEncoder()
 /*/////////////////////////////*/
 /*    Basic Drive Functions    */
 /*/////////////////////////////*/
-void driveAlto(float distanceInInches, int spd)//distance controls direction not spd
+
+void move(float distanceInInches)//distance controls direction not spd
 {
+	float spd = 121;
 	float leftSpd = spd;
 	float rightSpd = spd;
 	float inverter = 1.0;
@@ -91,9 +99,8 @@ void driveAlto(float distanceInInches, int spd)//distance controls direction not
 	{
 		inverter *= -1.0;
 	}
-	float wheelRadius = 2.0;
-	float cir = wheelRadius*2*PI;
-	float degree = (( distanceInInches / cir ) * 360.0 * 0.6 );//0.5 for home
+	float cir = 4.0*PI; // 12.56
+	float degree = (( distanceInInches / cir ) * 360.0) * 0.5714;
 
 	SensorValue[encoderRight] = 0;
 	SensorValue[encoderLeft] = 0;
@@ -131,23 +138,63 @@ void driveAlto(float distanceInInches, int spd)//distance controls direction not
 	motor[frontR] = 0;
 	motor[frontL] = 0;
 }
-
-void turn(int bearing)//assume positive is right and negative is left
+/*
+void move(float targetDistance)
+{
+// Variables used to calculate how fast bot is moving
+float wheelDiameter = 4.0;
+float circumference = wheelDiameter * PI; //Roughly 14.13 inches
+float currentDistance = 0;
+float error = -10;
+float lastError = 0;
+float integral = 0;
+float derivative = 0;
+float power = 0;
+resetDriveEncoder();
+while(error < 5 && error > -5)
+{
+currentDistance = (float)SensorValue[encoderRight] / 360.0 * circumference;
+error = targetDistance - currentDistance;
+integral = (error > MAX_ERROR) ? 0 : (integral + error);
+derivative = error - lastError;
+power = (error * kp) + (integral * ki) + (derivative * kd);
+if(power > 0)
+{
+if(power > MAX_POWER)
+{
+power = MAX_POWER;
+}
+else if(power < MIN_POWER)
+{
+power = MIN_POWER;
+}
+}
+else if(power < 0)
+{
+if(power < -MAX_POWER)
+{
+power = -MAX_POWER;
+}
+else if(power > -MIN_POWER)
+{
+power = -MIN_POWER;
+}
+}
+motor[frontL] = power;
+motor[backL] = power;
+motor[frontR] = power;
+motor[backR] = power;
+lastError = error;
+}
+resetDrive();
+}*/
+void turn(float bearing)//assume positive is right and negative is left
 {
 	//bearing*=(4/5);
-	bearing = (bearing / 10) * 9;
-	int currentBearing = SensorValue[gyro]/10;
-	int targetBearing = bearing + currentBearing;
-	int TURN_SLOWDOWN = 10;
-
-	if(targetBearing > 0 && targetBearing > 360)
-	{
-		targetBearing = targetBearing - 360;
-	}
-	else if(targetBearing < 0 && targetBearing < -360)
-	{
-		targetBearing = targetBearing + 360;
-	}
+	bearing = (bearing * 9) / 10;//6.755
+	float currentBearing = SensorValue[gyro]/10;
+	float targetBearing = bearing + currentBearing;
+	float TURN_SLOWDOWN = 10;
 
 	//float gyr = SensorValue[Gyro]/10;
 
@@ -157,6 +204,16 @@ void turn(int bearing)//assume positive is right and negative is left
 
 	if (targetBearing < SensorValue[gyro]/10) // Left turn
 	{
+
+		if(targetBearing > 0 && targetBearing > 360)
+		{
+		targetBearing = targetBearing - 360;
+		}
+		else if(targetBearing < 0 && targetBearing < -360)
+		{
+		targetBearing = targetBearing + 360;
+		}
+
 		while (SensorValue[gyro]/10 > targetBearing + TURN_SLOWDOWN)
 		{
 			motor[frontL] = -100;
@@ -174,16 +231,26 @@ void turn(int bearing)//assume positive is right and negative is left
 			//gyr = SensorValue[Gyro]/10;
 		}
 
-		motor[frontL] = 50;
-		motor[backL] = 50;
-		motor[frontR] = -50;
-		motor[backR] = -50;
+		motor[frontL] = 40;
+		motor[backL] = 40;
+		motor[frontR] = -40;
+		motor[backR] = -40;
 		wait1Msec(200);
 
 		resetDrive();
 	}
 	else // Right turn
 	{
+
+		if(targetBearing > 0 && targetBearing > 360)
+		{
+		targetBearing = targetBearing - 360;
+		}
+		else if(targetBearing < 0 && targetBearing < -360)
+		{
+		targetBearing = targetBearing + 360;
+		}
+
 		while (SensorValue[gyro]/10 < targetBearing - TURN_SLOWDOWN)
 		{
 			motor[frontL] = 100;
@@ -200,10 +267,10 @@ void turn(int bearing)//assume positive is right and negative is left
 			motor[backR] = -50;
 			//gyr = SensorValue[gyro]/10;
 		}
-		motor[frontL] = -50;
-		motor[backR] = -50;
-		motor[frontR] = 50;
-		motor[backR] = 50;
+		motor[frontL] = -40;
+		motor[backR] = -40;
+		motor[frontR] = 40;
+		motor[backR] = 40;
 
 		wait1Msec(200);
 
@@ -291,6 +358,126 @@ task autonomous()
 	// Remove this function call once you have "real" code.
 	//AutonomousCodePlaceholderForTesting();
 
+	mogo(front);
+	move(53);
+	mogo(back);
+	wait1Msec(200);
+	move(-46);
+	turn(-45);//degree of turn
+	move(-24);
+	turn(-90);
+	wait1Msec(200);
+	constantDrive(120);
+	wait1Msec(700);
+	constantDrive(30);
+	mogo(front);
+	constantDrive(-50);
+	wait1Msec(300);
+	mogo(back);
+	move(-11);
+	/*constantDrive(121);//positive is forward
+	wait1Msec(1700);
+	constantDrive(40);
+	mogo(front);
+	wait1Msec(200);
+	constantDrive(-50);
+	wait1Msec(500);
+	constantDrive(0);
+	mogo(back);*/ //score 20 points
+	//total 20
+
+	turn(-90);//wall crash
+	move(-40);//wall                       maybe make this constantDrive so it doesn't stop********************(maybe)
+	constantDrive(-60);
+	wait1Msec(1000);
+	resetDriveEncoder(); //wall sensor reset
+	mogo(front);
+	move(43);
+	mogo(back);
+	turn(135);
+	move(47);
+	mogo(front);
+	move(-10);
+	mogo(back);//score 10 points
+	//total 30
+
+	turn(-90);
+	move(21);
+	turn(-90);
+	mogo(front);
+	move(34);
+	mogo(back);
+	wait1Msec(300);
+	turn(-180);
+	move(40);
+	mogo(front);
+	move(-10);//score 10 points
+	mogo(back);
+	//total 40
+
+	turn(-180);
+	mogo(front);
+	move(70);
+	mogo(back);
+	move(30);
+	turn(-90);
+	move(18);
+	turn(90);
+	constantDrive(121);
+	wait1Msec(1700);
+	resetDrive();
+	mogo(front);
+	constantDrive(-35);
+	wait1Msec(450);
+	resetDrive();
+	mogo(back);//score 20 points
+	move(-33);
+	//total 60
+	/*
+	turnToBearing(-90);
+	driveAlto(8, 110);
+	turnToBearing(-90);
+	SensorValue[QEBase] = 0;
+	motor[baseLiftL] = baseSpd;
+	motor[baseLiftR] = baseSpd;
+	driveAlto(15, 100);//(distance, spd)
+	reset = false;
+	pickUpBase();
+	turnToBearing(180);
+	driveAlto(15, 100);
+	putDownBase();
+	//total 72
+	//If there is time then move on to this code \/
+	turnToBearing(-90);
+	driveAlto(16, 120);//crash into wall here
+	driveAlto(-3, 100);//needs to be fine tuned for the wall
+	turnToBearing(-45);
+	SensorValue[QEBase] = 0;
+	motor[baseLiftL] = baseSpd;
+	motor[baseLiftR] = baseSpd;
+	driveAlto(28, 100);//(distance, spd)
+	reset = false;
+	pickUpBase();
+	wait1Msec(200);
+	driveAlto(-23, 110);
+	turnToBearing(-45);//degree of turn
+	driveAlto(-10, 110);
+	turnToBearing(-90);
+	driveAlto(10, 125);
+	putDownBase();//score 10 points
+	//total 82
+	*/
+
+
+
+
+
+
+
+
+
+
+
 	/*driveAlto(60, 121);
 	turn(-90);
 	*/
@@ -351,7 +538,6 @@ task autonomous()
 	mogo(front);
 	wait1Msec(200);
 	driveAlto(32, 121);
-
 	turn(-135);
 	driveAlto(45, 121);
 	mogo(front);
