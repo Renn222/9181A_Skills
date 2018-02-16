@@ -89,22 +89,21 @@ void resetMogoEncoder()
 /*    Basic Drive Functions    */
 /*/////////////////////////////*/
 
-void move(float distanceInInches)//distance controls direction not spd
+void move(float distance)//distance controls direction not spd
 {
 	float spd = 121;
 	float leftSpd = spd;
 	float rightSpd = spd;
 	float inverter = 1.0;
-	if(distanceInInches < 0.0)
+	if(distance < 0.0)
 	{
 		inverter *= -1.0;
 	}
 	float cir = 4.0*PI; // 12.56
-	float degree = (( distanceInInches / cir ) * 360.0) * 0.5714;
 
 	SensorValue[encoderRight] = 0;
 	SensorValue[encoderLeft] = 0;
-	while(abs(degree) > abs(SensorValue[encoderRight]) && abs(degree) > abs(SensorValue[encoderLeft]))
+	while(abs(distance) > abs(SensorValue[encoderRight]) && abs(distance) > abs(SensorValue[encoderLeft]))
 	{
 		rightSpd = spd;
 		leftSpd = spd;
@@ -132,7 +131,7 @@ void move(float distanceInInches)//distance controls direction not spd
 	motor[backR] = -(rightSpd * inverter) / 3;
 	motor[frontL] = -(leftSpd * inverter) / 3;
 	motor[frontR] = -(rightSpd * inverter) / 3;
-	wait1Msec(150);
+	wait1Msec(200);
 	motor[backL] = 0;
 	motor[backR] = 0;
 	motor[frontR] = 0;
@@ -351,39 +350,73 @@ void pre_auton()
 
 task autonomous()
 {
-	// ..........................................................................
-	// Insert user code here.
-	// ..........................................................................
-
-	// Remove this function call once you have "real" code.
-	//AutonomousCodePlaceholderForTesting();
+	motor[tipL] = -100;
+	motor[tipR] = -100;
+	wait1Msec(170);
+	motor[tipL] = 0;
+	motor[tipR] = 0;
 
 	mogo(front);
-	move(53);
+	move(435);
+	constantDrive(70);
+	wait1Msec(50);
+	constantDrive(0);
+
 	mogo(back);
 	wait1Msec(200);
-	move(-46);
-	turn(-45);//degree of turn
-	move(-24);
-	turn(-90);
-	wait1Msec(200);
+
+	motor[tipL] = 100;
+	motor[tipR] = 100;
+	wait1Msec(170);
+	motor[tipL] = 0;
+	motor[tipR] = 0;
+
+	move(-360);
+
+	turn(84);//degree of turn
+	move(285);
+
+	turn(84);
+	move(265);
+	constantDrive(50);
+	mogo(front);
+	wait1Msec(50);
+	mogo(back);
+	wait1Msec(150);
+	constantDrive(0);
+
+	move(-242);
+
+	turn(-84);
+	move(192);
+
+	turn(-84);
+
+	mogo(front);
+	move(275);
+	constantDrive(70);
+	wait1Msec(50);
+	constantDrive(0);
+
+	mogo(back);
+	move(-300);
+
+	turn(168);
+	move(front);
+	move(40);
+	move(-40);
+	/*wait1Msec(200);
 	constantDrive(120);
 	wait1Msec(700);
+
 	constantDrive(30);
 	mogo(front);
+
 	constantDrive(-50);
 	wait1Msec(300);
 	mogo(back);
-	move(-11);
-	/*constantDrive(121);//positive is forward
-	wait1Msec(1700);
-	constantDrive(40);
-	mogo(front);
-	wait1Msec(200);
-	constantDrive(-50);
-	wait1Msec(500);
-	constantDrive(0);
-	mogo(back);*/ //score 20 points
+	move(-11);*/
+
 	//total 20
 
 	turn(-90);//wall crash
