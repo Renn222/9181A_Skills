@@ -25,12 +25,12 @@
 
 int front = 1;
 int back  = -1;
-/*
+
 float kp = 5;
 float ki = 5;
 float kd = 5;
-*/
-int MAX_POWER = 121;
+
+int MAX_POWER = 100;
 int MIN_POWER = 40;
 int MAX_ERROR = 50;
 
@@ -72,53 +72,92 @@ void resetMogoEncoder()
 /*    Basic Drive Functions    */
 /*/////////////////////////////*/
 
-void move(float distance, int speed)//distance controls direction not spd
+void move(float targetDistance, int power)
 {
-	float spd = speed;
-	float leftSpd = spd;
-	float rightSpd = spd;
-	float inverter = 1.0;
-	if(distance < 0.0)
-	{
-		inverter *= -1.0;
-	}
-	float cir = 4.0*PI; // 12.56
+	/* Variables used to calculate how fast bot is moving*/
+	float wheelDiameter = 4.5;
+	float circumference = wheelDiameter * PI; //Roughly 14.13 inches
+	float currentDistance = 0;
+	float error = 1;
+	float lastError = 0;
+	float integral = 0;
+	float derivative = 0;
+	int power = 0;
+	int powerLeft = 0;
+	int powerRight = 0;
 
-	SensorValue[encoderRight] = 0;
-	SensorValue[encoderLeft] = 0;
-	while(abs(distance) > abs(SensorValue[encoderRight]) && abs(distance) > abs(SensorValue[encoderLeft]))
+	while(error > 0)
 	{
-		rightSpd = spd;
-		leftSpd = spd;
-		//uhhhhh idk if this works but whatever
-		if(leftSpd > 125.0){
-			leftSpd = 125.0;
-		}
-		else if(leftSpd < -125.0)
+		currentDistance = SensorValue[encoderRight] / 360 * circumference;
+
+		error = targetDistance - currentDistance;
+
+		integral = (error > MAX_ERROR / ki) ? 0 : (integral + error);
+		derivative = error - lastError;
+
+		power = (error * kp) + (integral * ki) + (derivative * kd);
+
+		if(power > 0)
 		{
-			leftSpd = -125.0;
+			if(power > MAX_POWER)
+			{
+				power = MAX_POWER;
+			}
+			else if(power < MIN_POWER)
+			{
+				power = MIN_POWER;
+			}
 		}
-		if(rightSpd > 125.0){
-			rightSpd = 125.0;
-		}
-		else if(rightSpd < -125.0)
+		else if(power < 0)
 		{
-			rightSpd = -125.0;
+			if(power < -MAX_POWER)
+			{
+				power = -MAX_POWER;
+			}
+			else if(power > -MIN_POWER)
+			{
+				power = -MIN_POWER;
+			}
 		}
-		motor[backL] = leftSpd * inverter;
-		motor[backR] = rightSpd * inverter;
-		motor[frontL] = leftSpd * inverter;
-		motor[frontR] = rightSpd * inverter;
+		powerLeft = encoderPID(power, left);
+		powerRight = encoderPID(power, right);
+		
+		motor[frontL] = powerLeft;
+		motor[backL] = powerLeft;
+		motor[frontR] = powerRight;
+		motor[backR] = powerRight;
+
+		lastError = error;
 	}
-	motor[backL] = -(leftSpd * inverter) / 3;
-	motor[backR] = -(rightSpd * inverter) / 3;
-	motor[frontL] = -(leftSpd * inverter) / 3;
-	motor[frontR] = -(rightSpd * inverter) / 3;
-	wait1Msec(200);
-	motor[backL] = 0;
-	motor[backR] = 0;
-	motor[frontR] = 0;
-	motor[frontL] = 0;
+	resetDrive();
+}
+
+int encoderPID(int power, int side)
+{
+	int master = 0;
+	int slave = 0;
+	int error = 1;
+	
+	master = (SensorValue[encoderRight] >= SensorValue[encoderLeft]) ? SensorValue[encoderRight] : SensorValue[encoderLeft];
+	slave = (SensorValue[encoderRight] >= SensorValue[encoderLeft]) ? SensorValue[encoderLeft] : SensorValue[encoderRight];
+	
+	error = master - slave;
+	
+	if(side == right)
+	{
+		if(SensorValue[encoderRight] >= SensorValue[encoderLeft])
+		{
+			power = power + error * kp;
+		}
+	}
+	else if(side == left)
+	{
+		if(SensorValue[encoderRight] < SensorValue[encoderLeft])
+		{
+			power = power + error * kp;
+		}
+	}	
+	return power;
 }
 
 void turn(float bearing)//assume positive is right and negative is left
