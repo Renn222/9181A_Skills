@@ -1,0 +1,40 @@
+#pragma config(Sensor, in1,    lineLeft,       sensorLineFollower)
+#pragma config(Sensor, in2,    lineCenter,     sensorLineFollower)
+#pragma config(Sensor, in3,    lineRight,      sensorLineFollower)
+#pragma config(Sensor, in4,    gyro,           sensorGyro)
+#pragma config(Sensor, dgtl1,  encoderMogo,    sensorQuadEncoder)
+#pragma config(Sensor, dgtl3,  encoderRight,   sensorQuadEncoder)
+#pragma config(Sensor, dgtl5,  encoderLeft,    sensorQuadEncoder)
+#pragma config(Motor,  port2,           backR,         tmotorVex393TurboSpeed_MC29, openLoop, reversed)
+#pragma config(Motor,  port3,           backL,         tmotorVex393TurboSpeed_MC29, openLoop)
+#pragma config(Motor,  port4,           tipR,          tmotorVex393HighSpeed_MC29, openLoop)
+#pragma config(Motor,  port5,           mogoR,         tmotorVex393_MC29, openLoop)
+#pragma config(Motor,  port6,           mogoL,         tmotorVex393_MC29, openLoop, reversed)
+#pragma config(Motor,  port7,           tipL,          tmotorVex393HighSpeed_MC29, openLoop)
+#pragma config(Motor,  port8,           frontR,        tmotorVex393TurboSpeed_MC29, openLoop, reversed)
+#pragma config(Motor,  port9,           frontL,        tmotorVex393TurboSpeed_MC29, openLoop)
+
+int whiteLine = 0;
+lineDrive(int power)
+{
+  while(SensorValue[lineLeft] == whiteLine || SensorValue[lineCenter] == whiteLine || SensorValue[lineRight] == whiteLine)
+  {
+  	while(SensorValue[lineLeft] == whiteLine)
+	{
+		turn(3);
+	}
+	while(SensorValue[lineRight] == whiteLine)
+	{
+		turn(-3);
+	}
+	
+	while(SensorValue[lineCenter] == whiteLine)
+	{
+		motor[frontL] = 100;
+		motor[backL] = 100;
+		motor[frontR] = 100;
+		motor[backR] = 100;
+	}
+	resetDrive();
+  }
+}
