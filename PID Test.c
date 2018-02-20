@@ -44,6 +44,8 @@
 
 int front = 1;
 int back  = -1;
+int right = 1;
+int left = -1;
 
 int kp = 0;
 int ki = 0;
@@ -68,19 +70,21 @@ void move(float targetDistance, int power)
 	float wheelDiameter = 4.5;
 	float circumference = wheelDiameter * PI; //Roughly 14.13 inches
 	float currentDistance = 0;
-	float error = 0;
+	float error = 1;
 	float lastError = 0;
 	float integral = 0;
 	float derivative = 0;
 	int power = 0;
+	int powerLeft = 0;
+	int powerRight = 0;
 
-	while(error < 5 && error > -5)
+	while(error > 0)
 	{
 		currentDistance = SensorValue[encoderRight] / 360 * circumference;
 
 		error = targetDistance - currentDistance;
 
-		integral = (error > MAX_ERROR) ? 0 : (integral + error);
+		integral = (error > MAX_ERROR / ki) ? 0 : (integral + error);
 		derivative = error - lastError;
 
 		power = (error * kp) + (integral * ki) + (derivative * kd);
@@ -107,13 +111,44 @@ void move(float targetDistance, int power)
 				power = -MIN_POWER;
 			}
 		}
-
-		motor[frontL] = power;
-		motor[backL] = power;
-		motor[frontR] = power;
-		motor[backR] = power;
+		powerLeft = encoderPID(power);
+		powerRight = encoderPID(power);
+		
+		motor[frontL] = powerLeft;
+		motor[backL] = powerLeft;
+		motor[frontR] = powerRight;
+		motor[backR] = powerRight;
 
 		lastError = error;
 	}
 	resetDrive();
+}
+
+int encoderPID(int power, int side)
+{
+	int master = 0;
+	int slave = 0;
+	int error = 1;
+	
+	master = (SensorValue[encoderRight] >= SensorValue[encoderLeft]) ? SensorValue[encoderRight] : SensorValue[encoderLeft];
+	slave = (SensorValue[encoderRight] >= SensorValue[encoderLeft]) ? SensorValue[encoderLeft] : SensorValue[encoderRight];
+	
+	error = master - slave;
+	if(side == right)
+	{
+		if(SensorValue[encoderRight] >= SensorValue[encoderLeft])
+		{
+			
+		}
+	}
+	else if(side == left)
+	{
+		if(SensorValue[encoderRight] < SensorValue[encoderLeft])
+		{
+			
+		}
+	}
+	power = (side == right && SensorValue[encoderRight] >= SensorValue[encoderLeft]) ? power +  : power;
+	
+	return power;
 }
