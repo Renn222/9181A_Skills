@@ -17,24 +17,24 @@
 int whiteLine = 0;
 lineDrive(int power)
 {
-  while(SensorValue[lineLeft] == whiteLine || SensorValue[lineCenter] == whiteLine || SensorValue[lineRight] == whiteLine)
-  {
-  	while(SensorValue[lineLeft] == whiteLine)
-	{
-		turn(3);
-	}
-	while(SensorValue[lineRight] == whiteLine)
-	{
-		turn(-3);
-	}
+	while(SensorValue[lineLeft] == whiteLine || SensorValue[lineCenter] == whiteLine || SensorValue[lineRight] == whiteLine)
+  	{
+  		while(SensorValue[lineLeft] == whiteLine)
+		{
+			turn(-3);
+		}
+		while(SensorValue[lineRight] == whiteLine)
+		{
+			turn(3);
+		}
 	
-	while(SensorValue[lineCenter] == whiteLine)
-	{
-		motor[frontL] = 100;
-		motor[backL] = 100;
-		motor[frontR] = 100;
-		motor[backR] = 100;
+		while(SensorValue[lineCenter] == whiteLine)
+		{
+			motor[frontL] = 100;
+			motor[backL] = 100;
+			motor[frontR] = 100;
+			motor[backR] = 100;
+		}
 	}
 	resetDrive();
-  }
 }
