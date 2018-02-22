@@ -38,9 +38,11 @@ int final MAX_ERROR = 50;
 
 void move(float targetDistance, int maxPower)
 {
-	int kp = 0;
-	int ki = 0;
-	int kd = 0;
+	float kp = 0;
+	float ki = 0;
+	float kd = 0;
+	
+	float gyroScale = 0;
 	
 	/* Variables used to calculate how fast bot is moving*/
 	float wheelDiameter = 4.5;
@@ -58,7 +60,7 @@ void move(float targetDistance, int maxPower)
 	
 	while(error != 0)
 	{
-		currentDistance = SensorValue[encoderRight];
+		currentDistance = SensorValue[encoderRight] * gyroScale;
 
 		error = targetDistance - currentDistance;
 
