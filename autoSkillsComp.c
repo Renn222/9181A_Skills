@@ -25,14 +25,12 @@
 
 int front = 1;
 int back  = -1;
+int right = 1;
+int left = -1;
 
-float kp = 5;
-float ki = 5;
-float kd = 5;
-
-int MAX_POWER = 100;
-int MIN_POWER = 40;
-int MAX_ERROR = 50;
+int final MAX_POWER = 100;
+int final MIN_POWER = 40;
+int final MAX_ERROR = 50;
 
 int g = 0;
 int motorEncoderTest = 0;
@@ -72,8 +70,14 @@ void resetMogoEncoder()
 /*    Basic Drive Functions    */
 /*/////////////////////////////*/
 
-void move(float targetDistance, int power)
+void move(float targetDistance, int maxPower)
 {
+	float kp = 0;
+	float ki = 0;
+	float kd = 0;
+	
+	float gyroScale = 0;
+	
 	/* Variables used to calculate how fast bot is moving*/
 	float wheelDiameter = 4.5;
 	float circumference = wheelDiameter * PI; //Roughly 14.13 inches
@@ -85,23 +89,26 @@ void move(float targetDistance, int power)
 	int power = 0;
 	int powerLeft = 0;
 	int powerRight = 0;
-
-	while(error > 0)
+	
+	resetDriveEncoders();
+	
+	while(error != 0)
 	{
-		currentDistance = SensorValue[encoderRight] / 360 * circumference;
+		currentDistance = SensorValue[encoderRight] * gyroScale;
 
 		error = targetDistance - currentDistance;
 
 		integral = (error > MAX_ERROR / ki) ? 0 : (integral + error);
 		derivative = error - lastError;
-
+		lastError = error;
+		
 		power = (error * kp) + (integral * ki) + (derivative * kd);
 
 		if(power > 0)
 		{
-			if(power > MAX_POWER)
+			if(power > maxPower)
 			{
-				power = MAX_POWER;
+				power = maxPower;
 			}
 			else if(power < MIN_POWER)
 			{
@@ -110,9 +117,9 @@ void move(float targetDistance, int power)
 		}
 		else if(power < 0)
 		{
-			if(power < -MAX_POWER)
+			if(power < -maxPower)
 			{
-				power = -MAX_POWER;
+				power = -maxPower;
 			}
 			else if(power > -MIN_POWER)
 			{
@@ -127,126 +134,55 @@ void move(float targetDistance, int power)
 		motor[frontR] = powerRight;
 		motor[backR] = powerRight;
 
-		lastError = error;
 	}
 	resetDrive();
 }
-
-int encoderPID(int power, int side)
+void turnPID(float bearing)
 {
-	int master = 0;
-	int slave = 0;
-	int error = 1;
+	float kp = 0;
+	float ki = 0;
+	float kd = 0;
 	
-	master = (SensorValue[encoderRight] >= SensorValue[encoderLeft]) ? SensorValue[encoderRight] : SensorValue[encoderLeft];
-	slave = (SensorValue[encoderRight] >= SensorValue[encoderLeft]) ? SensorValue[encoderLeft] : SensorValue[encoderRight];
+	float error = 1;
+	float currentBearing = SensorValue[gyro];
+	float targetBearing = bearing * 10 + currentBearing;
 	
-	error = master - slave;
-	
-	if(side == right)
+	while(error != 0)
 	{
-		if(SensorValue[encoderRight] >= SensorValue[encoderLeft])
+		error = targetBearing - currentBearing;
+		integral = (error > MAX_ERROR / ki) ? 0 : (integral + error);
+		derivative = error - lastError;
+		
+		if(power > 0)
 		{
-			power = power + error * kp;
+			if(power > maxPower)
+			{
+				power = MAX_POWER;
+			}
+			else if(power < MIN_POWER)
+			{
+				power = MIN_POWER;
+			}
 		}
-	}
-	else if(side == left)
-	{
-		if(SensorValue[encoderRight] < SensorValue[encoderLeft])
+		
+		else if(power < 0)
 		{
-			power = power + error * kp;
+			if(power < -MAX_POWER)
+			{
+				power = -MAX_POWER;
+			}
+			else if(power > -MIN_POWER)
+			{
+				power = -MIN_POWER;
+			}
 		}
-	}	
-	return power;
-}
-
-void turn(float bearing)//assume positive is right and negative is left
-{
-	//bearing*=(4/5);
-	bearing = (bearing * 9) / 10;//6.755
-	float currentBearing = SensorValue[gyro]/10;
-	float targetBearing = bearing + currentBearing;
-	float TURN_SLOWDOWN = 10;
-
-	//float gyr = SensorValue[Gyro]/10;
-
-
-	//MAKE TURNING ACCURATE BY MAKING REVERSE FOR 80ms
-
-
-	if (targetBearing < SensorValue[gyro]/10) // Left turn
-	{
-
-		if(targetBearing > 0 && targetBearing > 360)
-		{
-		targetBearing = targetBearing - 360;
-		}
-		else if(targetBearing < 0 && targetBearing < -360)
-		{
-		targetBearing = targetBearing + 360;
-		}
-
-		while (SensorValue[gyro]/10 > targetBearing + TURN_SLOWDOWN)
-		{
-			motor[frontL] = -100;
-			motor[backL] = -100;
-			motor[frontR] = 100;
-			motor[backR] = 100;
-			//gyr = SensorValue[Gyro]/10;
-		}
-		while (SensorValue[gyro]/10 > targetBearing)
-		{
-			motor[frontL] = -50;
-			motor[backL] = -50;
-			motor[frontR] = 50;
-			motor[backR] = 50;
-			//gyr = SensorValue[Gyro]/10;
-		}
-
-		motor[frontL] = 40;
-		motor[backL] = 40;
-		motor[frontR] = -40;
-		motor[backR] = -40;
-		wait1Msec(200);
-
-		resetDrive();
-	}
-	else // Right turn
-	{
-
-		if(targetBearing > 0 && targetBearing > 360)
-		{
-		targetBearing = targetBearing - 360;
-		}
-		else if(targetBearing < 0 && targetBearing < -360)
-		{
-		targetBearing = targetBearing + 360;
-		}
-
-		while (SensorValue[gyro]/10 < targetBearing - TURN_SLOWDOWN)
-		{
-			motor[frontL] = 100;
-			motor[backL] = 100;
-			motor[frontR] = -100;
-			motor[backR] = -100;
-			//gyr = SensorValue[Gyro]/10;
-		}
-		while (SensorValue[gyro]/10 < targetBearing)
-		{
-			motor[frontL] = 50;
-			motor[backL] = 50;
-			motor[frontR] = -50;
-			motor[backR] = -50;
-			//gyr = SensorValue[gyro]/10;
-		}
-		motor[frontL] = -40;
-		motor[backR] = -40;
-		motor[frontR] = 40;
-		motor[backR] = 40;
-
-		wait1Msec(200);
-
-		resetDrive();
+		powerLeft = (error >= 0) ? power : -power;
+		powerRight = (error >= 0) ? -power : power;
+		
+		motor[frontL] = powerLeft;
+		motor[backL] = powerLeft;
+		motor[frontR] = powerRight;
+		motor[backR] = powerRight;
 	}
 }
 
