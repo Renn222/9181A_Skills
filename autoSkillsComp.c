@@ -360,7 +360,18 @@ task usercontrol()
 			motor[mogoL] = 0;
 			motor[mogoR] = 0;
 		}
-
+		if(SensorValue[encoderMogo] == 95)
+		{
+			motor[mogoL] = 0;
+			motor[mogoR] = 0;
+		}
+		
+		if(SensorValue[encoderMogo] == 0)
+		{
+			motor[mogoL] = 0;
+			motor[mogoR] = 0;
+		}
+		
 		if(vexRT[Btn8D] == 1)
 		{
 			motor[tipL] = -23;
