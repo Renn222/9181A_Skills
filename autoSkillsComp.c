@@ -29,9 +29,10 @@ int back	= -1;
 int right = 1;
 int left = -1;
 
-int MAX_POWER = 121;
-int MIN_POWER = 40;
-int MAX_ERROR = 50;
+int final MAX_POWER = 121;
+int final MIN_POWER = 40;
+int final INTEGRAL_ACTIVE_ZONE = 100;
+int final MAX_INTEGRAL = 50;
 
 float error;
 
@@ -155,10 +156,10 @@ void turn(float bearing)
 	float currentBearing = (SensorValue[gyroLeft] + SensorValue[gyroRight]) / 2 * gyroScale;
 	float targetBearing = bearing * 10 + currentBearing;
 
-	while(error != 0)
+	while(true) // while(error != 0) when PID is done or something with a time limit 
 	{
 		error = targetBearing - currentBearing * gyroScale;
-		integral = (error > MAX_ERROR / ki) ? 0 : (integral + error);
+		integral = (error > INTEGRAL_ACTIVE_ZONE || error != 0) ? 0 : (integral + error);
 		derivative = error - lastError;
 
 		lastError = error;
@@ -171,10 +172,6 @@ void turn(float bearing)
 			{
 				power = MAX_POWER;
 			}
-			else if(power < MIN_POWER)
-			{
-				power = MIN_POWER;
-			}
 		}
 
 		else if(power < 0)
@@ -182,10 +179,6 @@ void turn(float bearing)
 			if(power < -MAX_POWER)
 			{
 				power = -MAX_POWER;
-			}
-			else if(power > -MIN_POWER)
-			{
-				power = -MIN_POWER;
 			}
 		}
 		powerLeft = (error >= 0) ? power : -power;
@@ -195,6 +188,11 @@ void turn(float bearing)
 		motor[backL] = powerLeft;
 		motor[frontR] = powerRight;
 		motor[backR] = powerRight;
+		
+		if(integral > MAX_INTEGRAL)
+		{
+			integral = MAX_INTEGRAL;
+		}
 	}
 }
 
@@ -218,13 +216,13 @@ void move(float targetDistance, int maxPower)
 
 	resetDriveEncoder();
 
-	while(error > 0 || error < 0)
+	while(true) // while( error != 0) when finished or a time limit
 	{
 		currentDistance = (SensorValue[encoderRight] + SensorValue[encoderLeft]) / 2;
 
 		error = targetDistance - currentDistance;
 
-		integral = (error > MAX_ERROR ) ? 0 : (integral + error);
+		integral = (error > INTEGRAL_ACTIVE_ZONE || error != 0) ? 0 : (integral + error);
 		derivative = error - lastError;
 		lastError = error;
 
@@ -236,10 +234,6 @@ void move(float targetDistance, int maxPower)
 			{
 				power = maxPower;
 			}
-			else if(power < MIN_POWER)
-			{
-				power = MIN_POWER;
-			}
 		}
 		else if(power < 0)
 		{
@@ -247,11 +241,8 @@ void move(float targetDistance, int maxPower)
 			{
 				power = -maxPower;
 			}
-			else if(power > -MIN_POWER)
-			{
-				power = -MIN_POWER;
-			}
 		}
+		
 		powerLeft = encoderPID(power, left);
 		powerRight = encoderPID(power, right);
 
@@ -259,6 +250,12 @@ void move(float targetDistance, int maxPower)
 		motor[backL] = powerLeft;
 		motor[frontR] = powerRight;
 		motor[backR] = powerRight;
+		
+		if(integral > MAX_INTEGRAL)
+		{
+			integral = MAX_INTEGRAL;
+		}
+		
 		wait1Msec(25);
 	}
 	resetDrive();
